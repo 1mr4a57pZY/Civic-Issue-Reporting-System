@@ -1,0 +1,204 @@
+import sqlite3
+import uuid
+from datetime import datetime
+
+DB_NAME = "civic_reports.db"
+
+ROUTING_MAP = {
+    'pothole': 'Public Works',
+    'streetlight': 'Electrical / Street Lighting',
+    'trash': 'Sanitation',
+    'overflow': 'Sanitation',
+    'garbage': 'Sanitation',
+    'tree': 'Parks & Trees',
+    'water': 'Water Department',
+    'road': 'Public Works',
+    'sewage': 'Sewerage',
+    'sign': 'Traffic / Signage',
+}
+
+def init_db():
+    con = sqlite3.connect(DB_NAME)
+    cur = con.cursor()
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS reports (
+        id TEXT PRIMARY KEY,
+        title TEXT,
+        description TEXT,
+        category TEXT,
+        department TEXT,
+        status TEXT,
+        created_at TEXT,
+        acknowledged_at TEXT,
+        resolved_at TEXT,
+        assigned_to TEXT
+    )
+    """)
+    con.commit()
+    con.close()
+
+def route_to_department(category, description):
+    if category and category.lower() in ROUTING_MAP:
+        return ROUTING_MAP[category.lower()]
+    if description:
+        text = description.lower()
+        for k, dept in ROUTING_MAP.items():
+            if k in text:
+                return dept
+    return "General City Services"
+
+def submit_report(title, description, category):
+    report_id = uuid.uuid4().hex
+    dept = route_to_department(category, description)
+    now = datetime.utcnow().isoformat()
+    con = sqlite3.connect(DB_NAME)
+    cur = con.cursor()
+    cur.execute("""
+    INSERT INTO reports (id,title,description,category,department,status,created_at)
+    VALUES (?,?,?,?,?,?,?)
+    """, (report_id, title, description, category, dept, "submitted", now))
+    con.commit()
+    con.close()
+    print("\n✅ Report submitted successfully")
+    print(f"ID: {report_id}")
+    print(f"Routed to: {dept}")
+
+def list_reports():
+    con = sqlite3.connect(DB_NAME)
+    cur = con.cursor()
+    cur.execute("""
+        SELECT id, title, department, status, created_at, acknowledged_at, resolved_at
+        FROM reports ORDER BY created_at DESC
+    """)
+    rows = cur.fetchall()
+    con.close()
+
+    if not rows:
+        print("\n(No reports found)")
+    else:
+        print("\n📋 Reports:")
+        for r in rows:
+            print(f"""
+ID: {r[0]}
+Title: {r[1]}
+Dept: {r[2]}
+Status: {r[3]}
+Created: {r[4]}
+Acknowledged: {r[5] if r[5] else 'Not yet'}
+Resolved: {r[6] if r[6] else 'Not yet'}
+---------------------------
+            """)
+
+def show_report(report_id):
+    """Helper to show full details of a single report."""
+    con = sqlite3.connect(DB_NAME)
+    cur = con.cursor()
+    cur.execute("""
+        SELECT id, title, department, status, created_at, acknowledged_at, resolved_at, assigned_to
+        FROM reports WHERE id=?
+    """, (report_id,))
+    row = cur.fetchone()
+    con.close()
+
+    if row:
+        print(f"""
+🔎 Report Details
+ID: {row[0]}
+Title: {row[1]}
+Dept: {row[2]}
+Status: {row[3]}
+Created: {row[4]}
+Acknowledged: {row[5] if row[5] else 'Not yet'}
+Resolved: {row[6] if row[6] else 'Not yet'}
+Assigned To: {row[7] if row[7] else 'Not assigned'}
+        """)
+    else:
+        print("⚠ Report not found")
+
+def update_report(report_id, status=None, assigned_to=None):
+    con = sqlite3.connect(DB_NAME)
+    cur = con.cursor()
+    now = datetime.utcnow().isoformat()
+
+    if status == "acknowledged":
+        cur.execute("UPDATE reports SET status=?, acknowledged_at=? WHERE id=?",
+                    (status, now, report_id))
+    elif status == "resolved":
+        cur.execute("UPDATE reports SET status=?, resolved_at=? WHERE id=?",
+                    (status, now, report_id))
+
+    if assigned_to:
+        cur.execute("UPDATE reports SET assigned_to=? WHERE id=?", (assigned_to, report_id))
+
+    con.commit()
+    con.close()
+
+    print("\n✅ Report updated successfully")
+    show_report(report_id)
+
+def analytics():
+    con = sqlite3.connect(DB_NAME)
+    cur = con.cursor()
+    cur.execute("SELECT department, COUNT(*) FROM reports GROUP BY department")
+    counts = cur.fetchall()
+    cur.execute("SELECT created_at,resolved_at FROM reports WHERE resolved_at IS NOT NULL")
+    times = cur.fetchall()
+    con.close()
+
+    print("\n📊 Analytics:")
+    if counts:
+        for dept, cnt in counts:
+            print(f"{dept}: {cnt} reports")
+    else:
+        print("No reports yet")
+
+    if times:
+        total = 0
+        n = 0
+        for c, r in times:
+            try:
+                t1 = datetime.fromisoformat(c)
+                t2 = datetime.fromisoformat(r)
+                total += (t2 - t1).total_seconds()
+                n += 1
+            except:
+                pass
+        if n:
+            avg = total / n
+            print(f"Average resolve time: {avg:.1f} seconds")
+    else:
+        print("No resolved reports yet")
+
+def main():
+    init_db()
+    while True:
+        print("\n=== Civic Issue Reporting System ===")
+        print("1. Submit a report")
+        print("2. List all reports")
+        print("3. Update a report (admin)")
+        print("4. View analytics")
+        print("5. Exit")
+        choice = input("Enter choice: ")
+
+        if choice == "1":
+            title = input("Title: ")
+            desc = input("Description: ")
+            cat = input("Category (pothole/trash/streetlight/...): ")
+            submit_report(title, desc, cat)
+        elif choice == "2":
+            list_reports()
+        elif choice == "3":
+            rid = input("Enter Report ID: ")
+            st = input("New status (acknowledged/resolved or leave blank): ")
+            ass = input("Assign to (optional): ")
+            update_report(rid, status=st if st else None, assigned_to=ass if ass else None)
+        elif choice == "4":
+            analytics()
+        elif choice == "5":
+            print("Exiting...")
+            break
+        else:
+            print("Invalid choice, try again.")
+
+if __name__ == "__main__":
+    main()

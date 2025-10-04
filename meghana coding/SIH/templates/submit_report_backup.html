@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ text["report_a_civic_issue"] }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/premium.css') }}">
+    <style>
+        .submit-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .submit-header h1 {
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+        .submit-header p {
+            color: #718096;
+            font-size: 1.1em;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .language-switcher {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+        .language-switcher form {
+            display: inline-block;
+        }
+        .language-switcher select {
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            background: white;
+            font-size: 14px;
+        }
+        .submit-form {
+            background: linear-gradient(145deg, #ffffff, #f8f9fa);
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1), 0 0 15px rgba(102, 126, 234, 0.05);
+            max-width: 700px;
+            margin: 0 auto;
+            border: 1px solid rgba(102, 126, 234, 0.1);
+        }
+        .form-group {
+            margin-bottom: 25px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 1em;
+        }
+        .form-group input[type="text"],
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+            background: white;
+        }
+        .form-group input[type="text"]:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: translateY(-1px);
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 120px;
+            line-height: 1.5;
+        }
+        .file-upload-area {
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        .file-upload-area:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        .file-upload-area.dragover {
+            border-color: #667eea;
+            background: #e6f0ff;
+        }
+        .file-input {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+        .file-upload-content {
+            pointer-events: none;
+        }
+        .file-upload-icon {
+            font-size: 3em;
+            color: #a0aec0;
+            margin-bottom: 10px;
+        }
+        .file-upload-text {
+            color: #4a5568;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        .file-upload-hint {
+            color: #718096;
+            font-size: 0.9em;
+        }
+        .file-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .file-preview-item {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #e2e8f0;
+        }
+        .file-preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .file-preview-item .remove-file {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .submit-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        .submit-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 16px 32px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 160px;
+        }
+        .submit-btn:hover {
+            background: linear-gradient(135deg, #059669, #047857);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+        }
+        .cancel-btn {
+            background: #6b7280;
+            color: white;
+            padding: 16px 32px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            min-width: 160px;
+        }
+        .cancel-btn:hover {
+            background: #4b5563;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.4);
+        }
+        .required-indicator {
+            color: #ef4444;
+            font-weight: bold;
+            margin-left: 2px;
+        }
+        .form-hint {
+            color: #718096;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    {% include "language_switcher.html" %}
+    <div class="submit-header">
+        <h1>{{ text["report_a_civic_issue"] }}</h1>
+        <p>{{ text["help_improve_community"] }}</p>
+    </div>
+
+    <form action="{{ url_for('submit_report') }}" method="POST" enctype="multipart/form-data" class="submit-form" id="reportForm">
+        <div class="form-group">
+            <label for="title">
+                {{ text["issue_title"] }} <span class="required-indicator">*</span>
+            </label>
+            <input type="text" name="title" id="title" required placeholder="{{ text['brief_description'] }}">
+            <div class="form-hint">{{ text["keep_concise"] }}</div>
+        </div>
+
+        <div class="form-group">
+            <label for="short_description">
+                Short Description <span class="required-indicator">*</span>
+            </label>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <input type="text" name="short_description" id="short_description" required placeholder="Type or speak your short description" style="flex-grow: 1;">
+                <button type="button" id="micButton" title="Click to speak" style="padding: 8px 12px; font-size: 16px; cursor: pointer;">🎤</button>
+            </div>
+            <div class="form-hint">You can type or use voice input for the short description.</div>
+        </div>
+
+        <div class="form-group">
+            <label for="description">
+                {{ text["detailed_description"] }} <span class="required-indicator">*</span>
+            </label>
+            <textarea name="description" id="description" required placeholder="{{ text['provide_detailed_info'] }}"></textarea>
+            <div class="form-hint">{{ text["include_detail_help"] }}</div>
+        </div>
+
+        <div class="form-group">
+            <label for="location">
+                {{ text["location"] }} <span class="required-indicator">*</span>
+            </label>
+            <input type="text" name="location" id="location" required placeholder="{{ text['street_address_landmark'] }}">
+            <div class="form-hint">{{ text["be_specific_help"] }}</div>
+        </div>
+
+        <!-- Interactive Map Section -->
+        <div class="form-group">
+            <label>Select Issue Location on Map <span class="required-indicator">*</span></label>
+            <div class="map-container">
+                <div id="locationMap" style="height: 400px; width: 100%; border-radius: 8px; border: 2px solid #e2e8f0;"></div>
+            </div>
+            <div class="form-hint">Click on the map to select the exact location of the issue</div>
+            <div id="selectedLocation" class="selected-location" style="display: none;">
+                <strong>Selected Location:</strong> <span id="locationInfo"></span>
+            </div>
+        </div>
+
+        <!-- Hidden inputs for GPS coordinates -->
+        <input type="hidden" name="latitude" id="latitude">
+        <input type="hidden" name="longitude" id="longitude">
+
+        <div class="form-group">
+            <label for="department">
+                {{ text["department"] }} <span class="required-indicator">*</span>
+            </label>
+            <select name="department" id="department" required>
+                <option value="">{{ text["select_department"] }}</option>
+                <option value="Roads & Highways">Roads & Highways</option>
+                <option value="Water Department">Water Department</option>
+                <option value="Sewerage">Sewerage</option>
+                <option value="Traffic/Signage">Traffic/Signage</option>
+                <option value="Electricity">Electricity</option>
+                <option value="Waste Management">Waste Management</option>
+                <option value="Public Safety">Public Safety</option>
+                <option value="Parks & Recreation">Parks & Recreation</option>
+                <option value="General">General</option>
+            </select>
+            <div class="form-hint">{{ text["select_appropriate_dept"] }}</div>
+        </div>
+
+        <div class="form-group">
+            <label>{{ text["upload_photos"] }} ({{ text["optional"] }})</label>
+            <div class="file-upload-area" id="fileUploadArea" onclick="document.getElementById('media').click();">
+                <div class="file-upload-content">
+                    <div class="file-upload-icon">📷🎥</div>
+                    <div class="file-upload-text">{{ text["click_upload_photos"] }}</div>
+                    <div class="file-upload-hint">{{ text["multiple_files_supported"] }}</div>
+                </div>
+                <input type="file" name="media" id="media" multiple accept="image/*,video/*" class="file-input">
+            </div>
+            <div class="file-preview" id="filePreview"></div>
+        </div>
+
+        <div class="submit-actions">
+            <a href="{{ url_for('home') }}" class="cancel-btn">{{ text["cancel"] }}</a>
+            <button type="submit" class="submit-btn">{{ text["submit_report"] }}</button>
+        </div>
+    </form>
+</div>
+
+    <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('media');
+    const fileUploadArea = document.getElementById('fileUploadArea');
+    const filePreview = document.getElementById('filePreview');
+    const micButton = document.getElementById('micButton');
+    const shortDescriptionInput = document.getElementById('short_description');
+
+    // Drag and drop functionality
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        fileUploadArea.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        fileUploadArea.classList.add('dragover');
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        fileUploadArea.classList.remove('dragover');
+    });
+
+    fileUploadArea.addEventListener('drop', handleDrop, false);
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        handleFiles(files);
+    }
+
+    fileInput.addEventListener('change', function(e) {
+        handleFiles(e.target.files);
+    });
+
+    function handleFiles(files) {
+        [...files].forEach(previewFile);
+    }
+
+    function previewFile(file) {
+        const previewItem = document.createElement('div');
+        previewItem.className = 'file-preview-item';
+
+        if (file.type.startsWith('image/')) {
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            previewItem.appendChild(img);
+        } else if (file.type.startsWith('video/')) {
+            const video = document.createElement('video');
+            video.src = URL.createObjectURL(file);
+            video.controls = true;
+            video.style.width = '100%';
+            video.style.height = '100%';
+            previewItem.appendChild(video);
+        } else {
+            // Unsupported file type preview
+            const span = document.createElement('span');
+            span.textContent = file.name;
+            previewItem.appendChild(span);
+        }
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'remove-file';
+        removeBtn.innerHTML = '×';
+        removeBtn.onclick = function() {
+            previewItem.remove();
+            // Note: In a real implementation, you'd also remove the file from the input
+        };
+
+        previewItem.appendChild(removeBtn);
+        filePreview.appendChild(previewItem);
+    }
+
+    // Speech to text for short description
+    let recognition;
+    if ('webkitSpeechRecognition' in window) {
+        recognition = new webkitSpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+
+        micButton.addEventListener('click', () => {
+            recognition.start();
+            micButton.textContent = '🎙️...';
+        });
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            shortDescriptionInput.value = transcript;
+            recognition.stop();
+            micButton.textContent = '🎤';
+        };
+
+        recognition.onerror = (event) => {
+            recognition.stop();
+            micButton.textContent = '🎤';
+            let errorMessage = 'Speech recognition error: ' + event.error;
+            if (event.error === 'no-speech') {
+                errorMessage = 'No speech detected. Please speak clearly and try again.';
+            } else if (event.error === 'audio-capture') {
+                errorMessage = 'Microphone access denied. Please allow microphone access and try again.';
+            } else if (event.error === 'not-allowed') {
+                errorMessage = 'Microphone permission denied. Please enable microphone access in your browser settings.';
+            }
+            alert(errorMessage);
+        };
+    } else {
+        micButton.disabled = true;
+        micButton.title = 'Speech recognition not supported in this browser';
+    }
+
+    // GPS Location functionality
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            function (position) {
+                document.getElementById("latitude").value = position.coords.latitude;
+                document.getElementById("longitude").value = position.coords.longitude;
+            },
+            function (error) {
+                console.log("Unable to fetch location. Error:", error.message);
+                // Allow form submission even if location access is denied
+            }
+        );
+    } else {
+        console.log("Geolocation is not supported by this browser.");
+    }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/premium.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map { height: 500px; width: 100%; margin-top: 20px; }
+    </style>
+    <style>
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .dashboard-actions {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .reports-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .report-card {
+            background: linear-gradient(145deg, #ffffff, #f8f9fa);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .report-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+        .report-id {
+            background: #667eea;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        .report-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+        .report-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+        .meta-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.9em;
+            color: #4a5568;
+        }
+        .meta-item strong {
+            min-width: 80px;
+            color: #2d3748;
+        }
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+            color: white;
+            text-transform: uppercase;
+        }
+        .status-pending { background: linear-gradient(45deg, #fbbf24, #f59e0b); }
+        .status-acknowledged { background: linear-gradient(45deg, #3b82f6, #2563eb); }
+        .status-in_progress { background: linear-gradient(45deg, #f59e0b, #d97706); }
+        .status-resolved { background: linear-gradient(45deg, #10b981, #059669); }
+        .photo-preview {
+            margin-top: 15px;
+        }
+        .photo-gallery {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .photo-gallery img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .photo-gallery img:hover {
+            transform: scale(1.1);
+            border-color: #667eea;
+        }
+        .view-details-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+            margin-top: 15px;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .view-details-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+        .view-details-btn:hover::before {
+            left: 100%;
+        }
+        .view-details-btn:hover {
+            background: linear-gradient(135deg, #764ba2, #667eea);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+        }
+        .view-details-btn:active {
+            transform: translateY(-1px) scale(1.02);
+            box-shadow: 0 2px 10px rgba(102, 126, 234, 0.4);
+        }
+        .no-reports {
+            text-align: center;
+            padding: 50px 20px;
+            color: #718096;
+            font-size: 1.1em;
+        }
+        .stats-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: linear-gradient(145deg, #ffffff, #f8f9fa);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+        }
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            color: #4a5568;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    {% include "language_switcher.html" %}
+    <div class="dashboard-header">
+        <h1>{{ _("Admin Dashboard") }}</h1>
+        <div class="dashboard-actions">
+            <a href="/" class="btn">{{ _("← Back to User Portal") }}</a>
+        </div>
+    </div>
+
+    {% if reports %}
+    <div class="stats-summary">
+        <div class="stat-card">
+            <div class="stat-number">{{ reports|length }}</div>
+            <div class="stat-label">Total Reports</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ reports|selectattr('status', 'equalto', 'pending')|list|length }}</div>
+            <div class="stat-label">Pending</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ reports|selectattr('status', 'equalto', 'in_progress')|list|length }}</div>
+            <div class="stat-label">In Progress</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ reports|selectattr('status', 'equalto', 'resolved')|list|length }}</div>
+            <div class="stat-label">Resolved</div>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <div class="reports-grid">
+        {% for report in reports %}
+        <div class="report-card">
+            <div class="report-header">
+                <span class="report-id">#{{ report.id }}</span>
+                <span class="status-badge status-{{ report.status }}">{{ report.status.replace('_',' ').capitalize() }}</span>
+            </div>
+
+            <div class="report-title">{{ report.title }}</div>
+
+            <div class="report-meta">
+                <div class="meta-item">
+                    <strong>Location:</strong> {{ report.location }}
+                </div>
+                {% if report.latitude and report.longitude %}
+                <div class="meta-item">
+                    <strong>GPS:</strong> {{ "%.6f"|format(report.latitude) }}, {{ "%.6f"|format(report.longitude) }}
+                    <a href="https://www.google.com/maps?q={{ report.latitude }},{{ report.longitude }}" target="_blank" style="color: #667eea; text-decoration: none; margin-left: 5px;">📍</a>
+                </div>
+                {% endif %}
+                <div class="meta-item">
+                    <strong>Department:</strong> {{ report.department }}
+                </div>
+                <div class="meta-item">
+                    <strong>Submitted:</strong> {{ report.created_at.strftime('%b %d, %Y') }}
+                </div>
+            </div>
+
+            {% if report.photo %}
+            <div class="photo-preview">
+                <div class="photo-gallery">
+                    {% for p in report.photo.split(';') | list | batch(3) | first %}
+                        <a href="{{ url_for('static', filename='uploads/' ~ p) }}" target="_blank">
+                            <img src="{{ url_for('static', filename='uploads/' ~ p) }}" alt="Report photo">
+                        </a>
+                    {% endfor %}
+                    {% if report.photo.split(';') | length > 3 %}
+                        <div style="display: flex; align-items: center; justify-content: center; width: 80px; height: 80px; background: #f7fafc; border: 2px solid #e2e8f0; border-radius: 6px; color: #718096; font-weight: 500;">
+                            +{{ (report.photo.split(';') | length - 3) }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if report.media %}
+            <div class="media-preview">
+                <div class="photo-gallery">
+                    {% for m in report.media.split(';') | list | batch(3) | first %}
+                        <a href="{{ url_for('static', filename='uploads/' ~ m) }}" target="_blank">
+                            {% if m.lower().endswith(('.mp4', '.avi', '.mov', '.wmv')) %}
+                                <video width="80" height="80" controls>
+                                    <source src="{{ url_for('static', filename='uploads/' ~ m) }}" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                            {% else %}
+                                <img src="{{ url_for('static', filename='uploads/' ~ m) }}" alt="Report media" width="80" height="80">
+                            {% endif %}
+                        </a>
+                    {% endfor %}
+                    {% if report.media.split(';') | length > 3 %}
+                        <div style="display: flex; align-items: center; justify-content: center; width: 80px; height: 80px; background: #f7fafc; border: 2px solid #e2e8f0; border-radius: 6px; color: #718096; font-weight: 500;">
+                            +{{ (report.media.split(';') | length - 3) }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <a href="{{ url_for('admin_report_detail', report_id=report.id) }}" class="view-details-btn">View Full Details</a>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="no-reports">
+        <h2>No Reports Yet</h2>
+        <p>The dashboard will show all submitted civic reports here.</p>
+    </div>
+    {% endif %}
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+    var map = L.map('map').setView([20.5937, 78.9629], 5); // India center
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    var reports = {{ reports|tojson }};
+    reports.forEach(function(report) {
+        if(report.latitude && report.longitude){
+            var statusColor = '#ff0000'; // Default red
+            if(report.status === 'pending') statusColor = '#fbbf24';
+            else if(report.status === 'in_progress') statusColor = '#f59e0b';
+            else if(report.status === 'resolved') statusColor = '#10b981';
+
+            L.circleMarker([report.latitude, report.longitude], {
+                color: statusColor,
+                fillColor: statusColor,
+                fillOpacity: 0.7,
+                radius: 8
+            })
+            .addTo(map)
+            .bindPopup(`<b>${report.title}</b><br>${report.location}<br>Status: ${report.status}<br><a href="/admin/report/${report.id}" target="_blank">View Details</a>`);
+        }
+    });
+</script>
+</body>
+</html>

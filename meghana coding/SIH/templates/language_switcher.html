@@ -1,0 +1,9 @@
+<div class="language-switcher" style="margin-bottom: 20px;">
+    <form action="{{ url_for('set_language') }}" method="post">
+        <select name="language" onchange="this.form.submit()">
+            <option value="en" {% if session.get('language', 'en') == 'en' %}selected{% endif %}>English</option>
+            <option value="hi" {% if session.get('language') == 'hi' %}selected{% endif %}>हिन्दी</option>
+            <option value="te" {% if session.get('language') == 'te' %}selected{% endif %}>తెలుగు</option>
+        </select>
+    </form>
+</div>
